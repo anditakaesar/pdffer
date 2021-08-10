@@ -3,6 +3,7 @@ import { json } from 'body-parser'
 import helmet from 'helmet'
 import compression from 'compression'
 import path from 'path'
+import { createPdf } from './helper'
 
 const app = express()
 
@@ -15,8 +16,25 @@ app.use(helmet({
 app.use(express.static(path.join(__dirname, '../static')))
 
 app.post('/genpdf', (req, res) => {
-  res.json({
-    message: 'it works'
+  process.nextTick(() => {
+    let html = req.body.html
+    let buff = Buffer.from(html, 'base64')
+
+    createPdf(buff)
+      .then((pdf) => {
+        res.set({
+          'Content-Type': 'application/pdf',
+          'Content-Length': pdf.length,
+          'Content-disposition': `inline; filename=test.pdf`
+        })
+        res.send(pdf)
+      })
+      .catch((err) => {
+        res.json({
+          message: 'error',
+          error: err.message
+        })
+      })
   })
 })
 
